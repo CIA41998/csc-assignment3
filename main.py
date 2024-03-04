@@ -86,6 +86,7 @@ def stv_single_winner(votes, candidate_names):
             break
 
 # Define candidate names
+# TO-DO: I'm a bit confused about 10 & 11 with write in 1/2. Do we just count the votes for those then?
 candidate_names = {
     1: "Jackie Kasabach",
     2: "Jack Johnson",

@@ -1,27 +1,71 @@
 from collections import Counter, defaultdict
 
 # Redefine the parsing function with additional checks for empty strings
+# def parse_input(file_path):
+#     votes = []
+#     with open(file_path, 'r') as file:
+#         for line in file:
+#             if not line.startswith('#') and line.strip():
+#                 # Check if line contains a colon before attempting to unpack
+#                 if ':' in line:
+#                     count, vote_str = line.strip().split(':')
+#                     vote = []
+#                     for part in vote_str.split('{'):
+#                         part = part.replace('}', '')
+#                         if part:
+#                             # Handle ties or individual votes, checking for empty strings
+#                             vote_part = tuple(filter(None, map(lambda x: x.strip(), part.split(','))))
+#                             if len(vote_part) > 1:
+#                                 vote.append(tuple(map(int, vote_part)))
+#                             elif vote_part:
+#                                 vote.append(int(vote_part[0]))
+#                     votes.extend([vote] * int(count))
+#                 else:
+#                     # Handle lines that do not contain a colon
+#                     print(f"Warning: Line skipped due to unexpected format: {line.strip()}")
+#     return votes
+
 def parse_input(file_path):
     votes = []
     with open(file_path, 'r') as file:
         for line in file:
             if not line.startswith('#') and line.strip():
-                # Check if line contains a colon before attempting to unpack
                 if ':' in line:
                     count, vote_str = line.strip().split(':')
+                    # Split the vote string on commas not within curly braces to preserve tied votes as single entities
+                    parts = []
+                    inside_curly = False
+                    current_part = []
+                    for char in vote_str:
+                        if char == '{':
+                            inside_curly = True
+                            current_part.append(char)  # Start capturing a tied vote
+                        elif char == '}':
+                            inside_curly = False
+                            current_part.append(char)  # End capturing a tied vote
+                            parts.append(''.join(current_part))  # Add the tied vote as a single part
+                            current_part = []  # Reset for next part
+                        elif char == ',' and not inside_curly:
+                            if current_part:  # If there's something captured before the comma
+                                parts.append(''.join(current_part))
+                                current_part = []
+                        else:
+                            current_part.append(char)
+                    if current_part:  # Add any remaining part after the last comma
+                        parts.append(''.join(current_part))
+
+                    # Convert parts into vote preferences, handling ties as tuples
                     vote = []
-                    for part in vote_str.split('{'):
-                        part = part.replace('}', '')
-                        if part:
-                            # Handle ties or individual votes, checking for empty strings
-                            vote_part = tuple(filter(None, map(lambda x: x.strip(), part.split(','))))
-                            if len(vote_part) > 1:
-                                vote.append(tuple(map(int, vote_part)))
-                            elif vote_part:
-                                vote.append(int(vote_part[0]))
+                    for part in parts:
+                        if '{' in part and '}' in part:
+                            # Remove curly braces and convert tied votes into a tuple
+                            tied_votes = part.replace('{', '').replace('}', '')
+                            vote.append(tuple(map(int, tied_votes.split(','))))
+                        else:
+                            vote.append(int(part))
+
                     votes.extend([vote] * int(count))
                 else:
-                    # Handle lines that do not contain a colon
                     print(f"Warning: Line skipped due to unexpected format: {line.strip()}")
     return votes
 
@@ -82,8 +126,9 @@ def stv_single_winner(votes, candidate_names):
             return candidate_names[winner]
 
         if not vote_counts:
-            print("  No more votes left to distribute, and no winner could be determined.")
+            print("No more votes left to distribute, and no winner could be determined.")
             break
+
 
 # Define candidate names
 # TO-DO: I'm a bit confused about 10 & 11 with write in 1/2. Do we just count the votes for those then?
